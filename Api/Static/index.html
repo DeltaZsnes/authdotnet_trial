@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<head>
+    <title>HostedPayment Test Page</title>
+    <script src="jquery.min.js"></script>
+    <script type="text/javascript">
+
+        $(function () {
+
+            $("#btnOpenAuthorizeNetIFrame").click(function () {
+                let data = { hostedPaymentIFrameCommunicatorUrl: window.location.origin + '/static/IFrameCommunicator.html' };
+                $.ajax({
+                    url: 'https://localhost:44373/Payments/Checkout',
+                    type: "POST",
+                    data: data,
+                    dataType: "json",
+                    success: (response) => {
+                        console.log(response);
+                        console.log(response.token);
+                        $("#send_token > input[type=hidden]").val(response.token);
+
+                        $("#add_payment").show();
+                        $("#send_token").attr({ "action": "https://test.authorize.net/payment/payment", "target": "add_payment" }).submit();
+                        $(window).scrollTop($('#add_payment').offset().top - 50);
+                    },
+                    error: (response) => {
+                        console.log(response);
+                    }
+                });
+            });
+
+        });
+
+
+    </script>
+</head>
+<body>
+
+    <div>
+        Open Authorize.Net in an iframe to complete transaction
+        <button id="btnOpenAuthorizeNetIFrame" onclick="">Show Payment Form</button>
+    </div>
+    <div id="iframe_holder" class="center-block" style="width:90%;max-width: 1000px">
+        <iframe id="add_payment" class="embed-responsive-item panel" name="add_payment" width="100%" frameborder="0" scrolling="no" hidden="true">
+        </iframe>
+    </div>
+    <form id="send_token" action="" method="post" target="add_payment">
+        <input type="hidden" name="token" value="Should be replaced with form token" />
+    </form>
+
+    <script type="text/javascript">
+
+        (function () {
+            if (!window.AuthorizeNetIFrame) window.AuthorizeNetIFrame = {};
+            AuthorizeNetIFrame.onReceiveCommunication = function (querystr) {
+                var params = parseQueryString(querystr);
+                switch (params["action"]) {
+                    case "successfulSave":
+                        break;
+                    case "cancel":
+                        break;
+                    case "resizeWindow":
+                        var w = parseInt(params["width"]);
+                        var h = parseInt(params["height"]);
+                        var ifrm = document.getElementById("add_payment");
+                        ifrm.style.width = w.toString() + "px";
+                        ifrm.style.height = h.toString() + "px";
+                        break;
+                    case "transactResponse":
+                        var ifrm = document.getElementById("add_payment");
+                        ifrm.style.display = 'none';
+                }
+            };
+
+            function parseQueryString(str) {
+                var vars = [];
+                var arr = str.split('&');
+                var pair;
+                for (var i = 0; i < arr.length; i++) {
+                    pair = arr[i].split('=');
+                    vars.push(pair[0]);
+                    vars[pair[0]] = unescape(pair[1]);
+                }
+                return vars;
+            }
+        }());
+    </script>
+</body>
+</html>
